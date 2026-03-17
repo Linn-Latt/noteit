@@ -1,4 +1,11 @@
-export default function Home() {
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+export default async function Home() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (session) redirect("/note");
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
 
@@ -6,7 +13,7 @@ export default function Home() {
       <nav className="flex items-center justify-between px-8 py-4">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#44A194] text-white text-xs font-bold">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#EC8F8D] text-white text-xs font-bold">
             N
           </div>
           <span className="font-semibold text-sm tracking-wide">NoteIT</span>
@@ -61,13 +68,13 @@ export default function Home() {
         <div className="mt-4 flex item-center max-w-xs sm:hidden">
           <a
             href="/register"
-            className="rounded-md px-5 py-2.5 text-sm font-medium text-center hover:opacity-90 transition-opacity hover:text-[#44A194]"
+            className="rounded-md px-5 py-2.5 text-sm font-medium text-center hover:opacity-90 transition-opacity hover:text-[#EC8F8D]"
           >
             Sign up
           </a>
           <a
             href="/login"
-            className="rounded-md px-5 py-2.5 text-sm font-medium text-center hover:bg-foreground/5 transition-colors hover:text-[#44A194]"
+            className="rounded-md px-5 py-2.5 text-sm font-medium text-center hover:bg-foreground/5 transition-colors hover:text-[#EC8F8D]"
           >
             Sign in
           </a>

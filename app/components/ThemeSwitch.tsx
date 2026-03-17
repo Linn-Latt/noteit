@@ -58,14 +58,14 @@ export default function ThemeSwitch() {
   const options: Theme[] = ["light", "dark", "system"];
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-0.5 rounded-full border border-black/10 bg-white/80 px-1 py-1 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-black/40">
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-0.5 rounded-full border border-black/10 bg-white/10 px-1 py-1 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-black/40">
       {options.map((opt) => (
         <button
           key={opt}
           onClick={() => apply(opt)}
           title={opt.charAt(0).toUpperCase() + opt.slice(1)}
           className={`flex items-center justify-center rounded-full p-1.5 transition-colors ${theme === opt
-            ? "bg-[#44A194] text-white"
+            ? "bg-[#EC8F8D] text-white"
             : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-700 dark:hover:text-zinc-100"
             }`}
         >
