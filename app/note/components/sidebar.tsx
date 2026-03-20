@@ -37,8 +37,12 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
 
     const [showMoveMenu, setShowMoveMenu] = useState(false);
     const [moveNoteId, setMoveNoteId] = useState<string | null>(null);
-    const [selectedMoveTarget, setSelectedMoveTarget] = useState<string | null | undefined>(undefined); // string = notebookId, null = Quick Notes
+    const [selectedMoveTarget, setSelectedMoveTarget] = useState<string | null | undefined>(undefined);
     const [moving, setMoving] = useState(false);
+
+    const [renameTarget, setRenameTarget] = useState<{ type: "notebook" | "note"; id: string; current: string } | null>(null);
+    const [renameValue, setRenameValue] = useState("");
+    const [renaming, setRenaming] = useState(false);
 
     useEffect(() => {
         fetch("/api/notebooks").then((r) => r.ok ? r.json() : []).then(setNotebooks);
@@ -160,6 +164,42 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
         setMoveNoteId(null);
         setSelectedMoveTarget(undefined);
         setMoving(false);
+    }
+
+    async function handleRename(e: React.FormEvent) {
+        e.preventDefault();
+        if (!renameTarget || !renameValue.trim()) return;
+        setRenaming(true);
+
+        if (renameTarget.type === "notebook") {
+            await fetch(`/api/notebooks/${renameTarget.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: renameValue.trim() }),
+            });
+            setNotebooks(prev => prev.map(nb =>
+                nb.id === renameTarget.id ? { ...nb, name: renameValue.trim() } : nb
+            ));
+        } else {
+            await fetch(`/api/notes/${renameTarget.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: renameValue.trim() }),
+            });
+            setNotes(prev => prev.map(n =>
+                n.id === renameTarget.id ? { ...n, title: renameValue.trim() } : n
+            ));
+            setNotebooks(prev => prev.map(nb => ({
+                ...nb,
+                notes: nb.notes.map(n =>
+                    n.id === renameTarget.id ? { ...n, title: renameValue.trim() } : n
+                ),
+            })));
+        }
+
+        setRenaming(false);
+        setRenameTarget(null);
+        setRenameValue("");
     }
 
     return (
@@ -423,6 +463,18 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                                 </button>
 
                                 <button
+                                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-foreground/5"
+                                    onClick={() => {
+                                        const nb = notebooks.find(n => n.id === contextMenu.id);
+                                        setRenameTarget({ type: "notebook", id: contextMenu.id, current: nb?.name ?? "" });
+                                        setRenameValue(nb?.name ?? "");
+                                        setContextMenu(null);
+                                    }}
+                                >
+                                    Rename
+                                </button>
+
+                                <button
                                     className="w-full text-left px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10"
                                     onClick={() => {
                                         setDeleteTargetId(contextMenu.id);
@@ -446,6 +498,20 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                                     }}
                                 >
                                     Move to
+                                </button>
+
+                                <button
+                                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-foreground/5"
+                                    onClick={() => {
+                                        const note =
+                                            notes.find(n => n.id === contextMenu.id) ||
+                                            notebooks.flatMap(nb => nb.notes).find(n => n.id === contextMenu.id);
+                                        setRenameTarget({ type: "note", id: contextMenu.id, current: note?.title ?? "" });
+                                        setRenameValue(note?.title ?? "");
+                                        setContextMenu(null);
+                                    }}
+                                >
+                                    Rename
                                 </button>
 
                                 <button
@@ -520,6 +586,43 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Rename Modal */}
+            {renameTarget && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+                    <form
+                        onSubmit={handleRename}
+                        className="bg-background rounded-xl p-6 w-72 flex flex-col gap-4 shadow-lg"
+                    >
+                        <h2 className="text-sm font-semibold">
+                            Rename {renameTarget.type === "notebook" ? "Notebook" : "Note"}
+                        </h2>
+                        <input
+                            autoFocus
+                            type="text"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            className="rounded-md border border-foreground/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-[#44A194] transition-colors"
+                        />
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                type="button"
+                                onClick={() => { setRenameTarget(null); setRenameValue(""); }}
+                                className="text-xs text-foreground/50 hover:text-foreground"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={renaming || !renameValue.trim()}
+                                className="rounded-md bg-[#EC8F8D] px-4 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60"
+                            >
+                                {renaming ? "Renaming..." : "Rename"}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             )}
 

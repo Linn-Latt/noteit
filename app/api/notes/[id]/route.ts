@@ -24,11 +24,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
-    const { content } = await req.json();
+    const { content, title } = await req.json();
+
+    const data: { content?: string; title?: string } = {};
+    if (content !== undefined) data.content = content;
+    if (title !== undefined) data.title = title.trim();
 
     const note = await prisma.note.updateMany({
         where: { id, userId: session.user.id, isDeleted: false },
-        data: { content },
+        data,
     });
 
     if (note.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
