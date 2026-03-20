@@ -11,6 +11,13 @@ export async function GET() {
     const notebooks = await prisma.notebook.findMany({
         where: { userId: session.user.id, isDeleted: false },
         orderBy: { createdAt: "asc" },
+        include: {
+            notes: {
+                where: { isDeleted: false },
+                select: { id: true, title: true },
+                orderBy: { createdAt: "asc" },
+            },
+        },
     });
 
     return NextResponse.json(notebooks);
