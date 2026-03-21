@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Bin from "./bin";
 
 type Notebook = { id: string; name: string; notes: Note[] };
 type Note = { id: string; title: string };
@@ -44,9 +45,17 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
     const [renameValue, setRenameValue] = useState("");
     const [renaming, setRenaming] = useState(false);
 
-    useEffect(() => {
+    const [draggingNoteId, setDraggingNoteId] = useState<string | null>(null);  
+
+    const [showBin, setShowBin] = useState(false);
+
+    function loadData() {
         fetch("/api/notebooks").then((r) => r.ok ? r.json() : []).then(setNotebooks);
         fetch("/api/notes").then((r) => r.ok ? r.json() : []).then(setNotes);
+    }
+
+    useEffect(() => {
+        loadData();
     }, []);
 
     async function handleCreateNotebook(e: React.FormEvent) {
@@ -276,11 +285,19 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                         return (
                             <li
                                 key={nb.id}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDragEnter={() => setExpandedNotebookId(nb.id)}
+                                onDrop={() => {
+                                    if (draggingNoteId) {
+                                        handleMoveNote(draggingNoteId, nb.id);
+                                        setDraggingNoteId(null);
+                                    }
+                                }}
                                 onContextMenu={(e) => {
                                     e.preventDefault();
                                     setContextMenu({ x: e.clientX, y: e.clientY, type: "notebook", id: nb.id });
                                 }}
-                                className="flex flex-col rounded-md"
+                                className={`flex flex-col rounded-md ${draggingNoteId ? "bg-foreground/5" : ""}`}
                             >
                                 {/* Notebook row */}
                                 <div
@@ -317,6 +334,9 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                                             <li
                                                 key={note.id}
                                                 onClick={() => onNoteSelect(note.id)}
+                                                draggable
+                                                onDragStart={() => setDraggingNoteId(note.id)}
+                                                onDragEnd={() => setDraggingNoteId(null)}
                                                 onContextMenu={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -328,7 +348,9 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                                                         fromNotebookId: nb.id,
                                                     });
                                                 }}
-                                                className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-foreground/5 cursor-pointer"
+                                                className={`flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer
+                                                    ${draggingNoteId === note.id ? "opacity-50" : "hover:bg-foreground/5"}
+                                                `}
                                             >
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -345,11 +367,25 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                 </ul>
 
                 {/* Quick Notes */}
-                <ul className="flex flex-col gap-1 px-4 pt-4">
+                <ul
+                    className={`flex flex-col gap-1 px-4 pt-4 transition-colors
+                        ${draggingNoteId ? "bg-foreground/5 rounded-md" : ""}
+                    `}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                        if (draggingNoteId) {
+                            handleMoveNote(draggingNoteId, null);
+                            setDraggingNoteId(null);
+                        }
+                    }}
+                >
                     {notes.map((note) => (
                         <li
                             key={note.id}
                             onClick={() => onNoteSelect(note.id)}
+                            draggable
+                            onDragStart={() => setDraggingNoteId(note.id)}
+                            onDragEnd={() => setDraggingNoteId(null)}
                             onContextMenu={(e) => {
                                 e.preventDefault();
                                 setContextMenu({
@@ -360,7 +396,9 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                                     fromNotebookId: null,
                                 });
                             }}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-foreground/5 cursor-pointer"
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer
+                                ${draggingNoteId === note.id ? "opacity-50" : "hover:bg-foreground/5"}
+                            `}
                         >
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -374,7 +412,7 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                 {/* Quick Notes section */}
                 <div className="mt-auto flex flex-col gap-1">
                     <div className="flex items-center justify-between px-4 mb-1">
-                        <span className="text-xs font-medium text-foreground/50 uppercase tracking-wider">Quick Notes</span>
+                        <span className="text-xs font-medium text-foreground/50 uppercase tracking-wider">Notes</span>
                         <button
                             onClick={() => setShowNoteForm(true)}
                             className="text-foreground/50 hover:text-foreground transition-colors text-lg leading-none"
@@ -383,6 +421,21 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                             +
                         </button>
                     </div>
+
+                    {/* Bin button */}
+                    <button
+                        onClick={() => setShowBin(true)}
+                        className="flex items-center gap-2 px-4 py-1.5 text-sm text-foreground/40 hover:text-foreground transition-colors"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14H6L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M9 6V4h6v2" />
+                        </svg>
+                        Bin
+                    </button>
                 </div>
             </aside>
 
@@ -566,7 +619,7 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                         <h2 className="text-sm font-semibold">Delete Note?</h2>
 
                         <p className="text-xs text-foreground/60">
-                            This note will be permanently deleted.
+                            This note will be deleted and sent to the Bin.
                         </p>
 
                         <div className="flex gap-2 justify-end">
@@ -684,6 +737,13 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showBin && (
+                <Bin
+                    onClose={() => setShowBin(false)}
+                    onRestored={loadData}
+                />
             )}
         </>
     )
