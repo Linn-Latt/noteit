@@ -9,25 +9,47 @@ export default function NoteEditor({ noteId }: { noteId: string | null }) {
 
     useEffect(() => {
         if (!noteId) return;
-        setEditorState(undefined);
-        setLoading(true);
-        fetch(`/api/notes/${noteId}`)
-            .then(r => r.json())
-            .then(n => {
-                setEditorState(n.content ? JSON.parse(n.content) : null);
-            })
-            .finally(() => setLoading(false));
+
+        setEditorState(undefined);  
+        setLoading(true); 
+
+        async function loadNote() {
+            try {
+                setEditorState(undefined);
+                setLoading(true);
+
+                const res = await fetch(`/api/notes/${noteId}`);
+
+                if (!res.ok) throw new Error("Failed to load note");
+
+                const note = await res.json();
+                setEditorState(note.content ? JSON.parse(note.content) : undefined);
+            } catch (err) {
+                console.error("Load note error:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadNote();
     }, [noteId]);
 
     function handleChange(state: SerializedEditorState) {
         clearTimeout((window as any).__saveTimer);
-        (window as any).__saveTimer = setTimeout(() => {
+        (window as any).__saveTimer = setTimeout(async () => {
             if (!noteId) return;
-            fetch(`/api/notes/${noteId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: JSON.stringify(state) }),
-            });
+
+            try {
+                const res = await fetch(`/api/notes/${noteId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ content: JSON.stringify(state) }),
+                });
+
+                if (!res.ok) throw new Error("Failed to save note");
+            } catch (err) {
+                console.error("Save note error:", err);
+            }
         }, 1000);
     }
 

@@ -27,8 +27,6 @@ export async function POST(req: Request) {
         data: {
             title: title?.trim() || "Untitled",
             content: "",
-            // userId: session.user.id,
-            // notebookId: notebookId ?? null,
             user: { connect: { id: session.user.id } },
             notebook: notebookId ? { connect: { id: notebookId } } : undefined,
         },

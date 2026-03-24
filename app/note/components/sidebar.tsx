@@ -6,14 +6,33 @@ import Bin from "./bin";
 type Notebook = { id: string; name: string; notes: Note[] };
 type Note = { id: string; title: string };
 
-export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
+// API Helper
+async function apiFetch(url: string, options?: RequestInit) {
+    const res = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+    });
+
+    if (!res.ok) {
+        throw new Error(`API Error: ${res.status}`);
+    }
+
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+}
+
+export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, selectedNoteId }: {
     userName: string
     onNoteSelect: (id: string) => void;
+    onNoteDeselect: () => void;
     selectedNoteId: string | null;
 }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [notebooks, setNotebooks] = useState<Notebook[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
+
+    const [loading, setLoading] = useState(false);
+
     const [showNotebookForm, setShowNotebookForm] = useState(false);
     const [showNoteForm, setShowNoteForm] = useState(false);
     const [newName, setNewName] = useState("");
@@ -45,13 +64,26 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
     const [renameValue, setRenameValue] = useState("");
     const [renaming, setRenaming] = useState(false);
 
-    const [draggingNoteId, setDraggingNoteId] = useState<string | null>(null);  
+    const [draggingNoteId, setDraggingNoteId] = useState<string | null>(null);
 
     const [showBin, setShowBin] = useState(false);
 
-    function loadData() {
-        fetch("/api/notebooks").then((r) => r.ok ? r.json() : []).then(setNotebooks);
-        fetch("/api/notes").then((r) => r.ok ? r.json() : []).then(setNotes);
+    async function loadData() {
+        try {
+            setLoading(true);
+
+            const [notebooksData, notesData] = await Promise.all([
+                apiFetch("/api/notebooks"),
+                apiFetch("/api/notes"),
+            ]);
+
+            setNotebooks(notebooksData);
+            setNotes(notesData);
+        } catch (err) {
+            console.error("Load error:", err);
+        } finally {
+            setLoading(false);
+        }
     }
 
     useEffect(() => {
@@ -61,154 +93,216 @@ export default function Sidebar({ userName, onNoteSelect, selectedNoteId }: {
     async function handleCreateNotebook(e: React.FormEvent) {
         e.preventDefault();
         if (!newName.trim()) return;
-        setCreatingNotebook(true);
-        const res = await fetch("/api/notebooks", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: newName.trim() }),
-        });
 
-        const notebook = await res.json();
-        setNotebooks([...notebooks, { ...notebook, notes: [] }]);
-        setNewName("");
-        setCreatingNotebook(false);
-        setShowNotebookForm(false);
+        try {
+            setCreatingNotebook(true);
+
+            const notebook = await apiFetch("/api/notebooks", {
+                method: "POST",
+                body: JSON.stringify({ name: newName.trim() }),
+            });
+
+            setNotebooks(prev => [...prev, { ...notebook, notes: [] }]);
+
+            setNewName("");
+            setShowNotebookForm(false);
+        } catch (err) {
+            console.error("Create notebook failed:", err);
+        } finally {
+            setCreatingNotebook(false);
+        }
     }
 
     // Delete notebook
     async function handleDeleteNotebook(notebookId: string) {
-        if (!deleteTargetId) return;
+        if (!notebookId) return;
 
-        setDeleting(true);
+        try {
+            setDeleting(true);
 
-        await fetch(`/api/notebooks/${notebookId}`, { method: "DELETE" });
-        setNotebooks((prev) => prev.filter(nb => nb.id !== deleteTargetId));
-        setDeleteTargetId(null);
-        setDeleting(false);
+            await apiFetch(`/api/notebooks/${notebookId}`, {
+                method: "DELETE",
+            });
+
+            setNotebooks(prev =>
+                prev.filter(nb => nb.id !== notebookId)
+            );
+
+            setDeleteTargetId(null);
+        } catch (err) {
+            console.error("Delete notebook failed:", err);
+        } finally {
+            setDeleting(false);
+        }
     }
 
+    // Create Note
     async function handleCreateNote(e: React.FormEvent) {
         e.preventDefault();
-        setCreatingNote(true);
-        const res = await fetch("/api/notes", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: newNoteTitle, notebookId: targetNotebookId }),
-        });
-        const note = await res.json();
-        onNoteSelect(note.id);
+        if (!newNoteTitle.trim()) return;
 
-        if (targetNotebookId) {
-            setNotebooks(notebooks.map((nb) =>
-                nb.id === targetNotebookId ? { ...nb, notes: [...nb.notes, note] } : nb
-            ));
-        } else {
-            setNotes([...notes, note]);
+        try {
+            setCreatingNote(true);
+
+            const note = await apiFetch("/api/notes", {
+                method: "POST",
+                body: JSON.stringify({
+                    title: newNoteTitle,
+                    notebookId: targetNotebookId,
+                }),
+            });
+
+            onNoteSelect(note.id);
+
+            if (targetNotebookId) {
+                setNotebooks(prev =>
+                    prev.map(nb =>
+                        nb.id === targetNotebookId
+                            ? { ...nb, notes: [...nb.notes, note] }
+                            : nb
+                    )
+                );
+            } else {
+                setNotes(prev => [...prev, note]);
+            }
+
+            setNewNoteTitle("");
+            setTargetNotebookId(null);
+            setShowNoteForm(false);
+        } catch (err) {
+            console.error("Create note failed:", err);
+        } finally {
+            setCreatingNote(false);
         }
-
-        setNewNoteTitle("");
-        setTargetNotebookId(null);
-        setCreatingNote(false);
-        setShowNoteForm(false);
     }
 
     // Delete note
     async function handleDeleteNote(noteId: string) {
-        if (!deleteNoteId) return;
+        if (!noteId) return;
 
-        setDeleting(true);
+        try {
+            setDeleting(true);
 
-        await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
-        // remove from quick notes
-        setNotes((prev) => prev.filter((n) => n.id !== noteId));
+            await apiFetch(`/api/notes/${noteId}`, {
+                method: "DELETE",
+            });
 
-        // remove from notebooks
-        setNotebooks((prev) =>
-            prev.map((nb) => ({
-                ...nb,
-                notes: nb.notes.filter((n) => n.id !== noteId),
-            }))
-        );
+            setNotes(prev => prev.filter(n => n.id !== noteId));
 
-        setDeleteNoteId(null);
-        setDeleting(false);
+            setNotebooks(prev =>
+                prev.map(nb => ({
+                    ...nb,
+                    notes: nb.notes.filter(n => n.id !== noteId),
+                }))
+            );
+
+            setDeleteNoteId(null);
+            if (noteId === selectedNoteId) onNoteDeselect();
+        } catch (err) {
+            console.error("Delete note failed:", err);
+        } finally {
+            setDeleting(false);
+        }
     }
 
     async function handleMoveNote(noteId: string, notebookId: string | null) {
-        await fetch(`/api/notes/${noteId}/move`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ notebookId }),
-        });
+        try {
+            setMoving(true);
 
-        // find note
-        const note = notes.find(n => n.id === noteId) || notebooks.flatMap(nb => nb.notes).find(n => n.id === noteId);
+            await apiFetch(`/api/notes/${noteId}/move`, {
+                method: "PATCH",
+                body: JSON.stringify({ notebookId }),
+            });
 
-        if (!note) return;
+            const note =
+                notes.find(n => n.id === noteId) ||
+                notebooks.flatMap(nb => nb.notes).find(n => n.id === noteId);
 
-        setMoving(true);
+            if (!note) return;
 
-        // remove from quick notes
-        setNotes(prev => prev.filter(n => n.id !== noteId));
+            setNotes(prev => prev.filter(n => n.id !== noteId));
 
-        // remove from any notebook it was in
-        setNotebooks(prev =>
-            prev.map(nb => ({
-                ...nb,
-                notes: nb.notes.filter(n => n.id !== noteId),
-            }))
-        );
+            setNotebooks(prev =>
+                prev.map(nb => ({
+                    ...nb,
+                    notes: nb.notes.filter(n => n.id !== noteId),
+                }))
+            );
 
-        if (notebookId) {
-            // add to target notebook
-            setNotebooks(prev => prev.map(nb =>
-                nb.id === notebookId ? { ...nb, notes: [...nb.notes, note] } : nb
-            ));
-        } else {
-            // add to quick notes
-            setNotes(prev => [...prev, note]);
+            if (notebookId) {
+                setNotebooks(prev =>
+                    prev.map(nb =>
+                        nb.id === notebookId
+                            ? { ...nb, notes: [...nb.notes, note] }
+                            : nb
+                    )
+                );
+            } else {
+                setNotes(prev => [...prev, note]);
+            }
+        } catch (err) {
+            console.error("Move failed:", err);
+        } finally {
+            setMoving(false);
+            setShowMoveMenu(false);
+            setMoveNoteId(null);
+            setSelectedMoveTarget(undefined);
         }
-
-        setShowMoveMenu(false);
-        setMoveNoteId(null);
-        setSelectedMoveTarget(undefined);
-        setMoving(false);
     }
 
     async function handleRename(e: React.FormEvent) {
         e.preventDefault();
         if (!renameTarget || !renameValue.trim()) return;
-        setRenaming(true);
 
-        if (renameTarget.type === "notebook") {
-            await fetch(`/api/notebooks/${renameTarget.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: renameValue.trim() }),
-            });
-            setNotebooks(prev => prev.map(nb =>
-                nb.id === renameTarget.id ? { ...nb, name: renameValue.trim() } : nb
-            ));
-        } else {
-            await fetch(`/api/notes/${renameTarget.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: renameValue.trim() }),
-            });
-            setNotes(prev => prev.map(n =>
-                n.id === renameTarget.id ? { ...n, title: renameValue.trim() } : n
-            ));
-            setNotebooks(prev => prev.map(nb => ({
-                ...nb,
-                notes: nb.notes.map(n =>
-                    n.id === renameTarget.id ? { ...n, title: renameValue.trim() } : n
-                ),
-            })));
+        try {
+            setRenaming(true);
+
+            if (renameTarget.type === "notebook") {
+                await apiFetch(`/api/notebooks/${renameTarget.id}`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ name: renameValue }),
+                });
+
+                setNotebooks(prev =>
+                    prev.map(nb =>
+                        nb.id === renameTarget.id
+                            ? { ...nb, name: renameValue }
+                            : nb
+                    )
+                );
+            } else {
+                await apiFetch(`/api/notes/${renameTarget.id}`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ title: renameValue }),
+                });
+
+                setNotes(prev =>
+                    prev.map(n =>
+                        n.id === renameTarget.id
+                            ? { ...n, title: renameValue }
+                            : n
+                    )
+                );
+
+                setNotebooks(prev =>
+                    prev.map(nb => ({
+                        ...nb,
+                        notes: nb.notes.map(n =>
+                            n.id === renameTarget.id
+                                ? { ...n, title: renameValue }
+                                : n
+                        ),
+                    }))
+                );
+            }
+
+            setRenameTarget(null);
+            setRenameValue("");
+        } catch (err) {
+            console.error("Rename failed:", err);
+        } finally {
+            setRenaming(false);
         }
-
-        setRenaming(false);
-        setRenameTarget(null);
-        setRenameValue("");
     }
 
     return (

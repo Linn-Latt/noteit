@@ -15,31 +15,57 @@ export default function Bin({ onClose, onRestored }: {
     const [restoringId, setRestoringId] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch("/api/trash")
-            .then(r => r.ok ? r.json() : { notes: [], notebooks: [] })
-            .then(data => {
+        async function loadTrash() {
+            try {
+                setLoading(true);
+
+                const res = await fetch("/api/trash");
+
+                if (!res.ok) {
+                    throw new Error("Failed to load trash");
+                }
+
+                const data = await res.json();
+
                 setNotes(data.notes);
                 setNotebooks(data.notebooks);
-            })
-            .finally(() => setLoading(false));
+            } catch (err) {
+                console.error("Load error:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadTrash();
     }, []);
 
     async function handleRestore(type: "note" | "notebook", id: string) {
-        setRestoringId(id);
-        await fetch("/api/trash/restore", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type, id }),
-        });
+        try {
+            setRestoringId(id);
 
-        if (type === "note") {
-            setNotes(prev => prev.filter(n => n.id !== id));
-        } else {
-            setNotebooks(prev => prev.filter(nb => nb.id !== id));
+            const res = await fetch("/api/trash/restore", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type, id }),
+            });
+
+            if (!res.ok) {
+                throw new Error("Restore failed");
+            }
+
+            if (type === "note") {
+                setNotes(prev => prev.filter(n => n.id !== id));
+            } else {
+                setNotebooks(prev => prev.filter(nb => nb.id !== id));
+            }
+
+            onRestored();
+
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setRestoringId(null);
         }
-
-        setRestoringId(null);
-        onRestored();
     }
 
     function formatDate(iso: string) {
@@ -53,7 +79,7 @@ export default function Bin({ onClose, onRestored }: {
             <div className="bg-background rounded-xl p-6 w-96 flex flex-col gap-4 shadow-lg max-h-[80vh]">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div> <span className="text-sm font-semibold">Bin </span> <span className="text-xs">(These will be permanently deledeted in 30 days)</span> </div> 
+                    <div> <span className="text-sm font-semibold">Bin </span> <span className="text-xs">(These will be permanently deledeted in 30 days)</span> </div>
                     <button onClick={onClose} className="text-foreground/50 hover:text-foreground transition-colors">
                         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
                             <line x1="14" y1="2" x2="2" y2="14" />

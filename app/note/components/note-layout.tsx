@@ -8,7 +8,12 @@ export default function NoteLayout({ userName }: { userName: string }) {
 
   return (
     <div className="flex h-screen">
-      <Sidebar userName={userName} onNoteSelect={setSelectedNoteId} selectedNoteId={selectedNoteId} />
+      <Sidebar 
+        userName={userName} 
+        onNoteSelect={setSelectedNoteId} 
+        onNoteDeselect={() => setSelectedNoteId(null)}
+        selectedNoteId={selectedNoteId} 
+      />
       <NoteEditor noteId={selectedNoteId} />
     </div>
   );
