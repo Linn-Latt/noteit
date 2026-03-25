@@ -15,7 +15,7 @@ export const initialValue = {
             format: 0,
             mode: "normal",
             style: "",
-            text: "Hello World 🚀",
+            text: "Hello World",
             type: "text",
             version: 1,
           },

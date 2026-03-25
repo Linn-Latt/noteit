@@ -21,11 +21,13 @@ async function apiFetch(url: string, options?: RequestInit) {
     return text ? JSON.parse(text) : null;
 }
 
-export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, selectedNoteId }: {
+export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, selectedNoteId, desktopOpen, onDesktopClose }: {
     userName: string
     onNoteSelect: (id: string) => void;
     onNoteDeselect: () => void;
     selectedNoteId: string | null;
+    desktopOpen: boolean;
+    onDesktopClose: () => void;
 }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -332,7 +334,7 @@ export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, select
                 fixed md:static top-0 left-0 h-screen w-64 z-50 bg-background
                 transform transition-transform duration-300
                 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-                md:translate-x-0
+                ${desktopOpen ? "md:translate-x-0" : "md:-translate-x-full md:fixed"}
                 border-r border-foreground/10 py-6 flex flex-col
             `}
             >
@@ -356,6 +358,19 @@ export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, select
                         <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                             <line x1="18" y1="6" x2="6" y2="18" />
                             <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+
+                    {/* Desktop Close Button */}
+                    <button
+                        onClick={onDesktopClose}
+                        className="hidden md:flex text-foreground/60 hover:text-foreground transition-colors"
+                        aria-label="Close sidebar"
+                    >
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="2" y1="5" x2="16" y2="5" />
+                            <line x1="2" y1="9" x2="16" y2="9" />
+                            <line x1="2" y1="13" x2="16" y2="13" />
                         </svg>
                     </button>
                 </div>

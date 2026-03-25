@@ -10,8 +10,8 @@ export default function NoteEditor({ noteId }: { noteId: string | null }) {
     useEffect(() => {
         if (!noteId) return;
 
-        setEditorState(undefined);  
-        setLoading(true); 
+        setEditorState(undefined);
+        setLoading(true);
 
         async function loadNote() {
             try {
