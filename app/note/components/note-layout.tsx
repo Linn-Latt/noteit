@@ -31,7 +31,9 @@ export default function NoteLayout({ userName }: { userName: string }) {
         desktopOpen={desktopOpen}
         onDesktopClose={() => setDesktopOpen(false)}
       />
-      <NoteEditor noteId={selectedNoteId} />
+      <main className="flex-1 flex flex-col min-h-0">
+        <NoteEditor noteId={selectedNoteId} />
+      </main>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Bin from "./bin";
+import { authClient } from "@/lib/auth-client";
 
 type Notebook = { id: string; name: string; notes: Note[] };
 type Note = { id: string; title: string };
@@ -69,6 +70,7 @@ export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, select
     const [draggingNoteId, setDraggingNoteId] = useState<string | null>(null);
 
     const [showBin, setShowBin] = useState(false);
+    const [signingOut, setSigningOut] = useState(false);
 
     async function loadData() {
         try {
@@ -334,7 +336,7 @@ export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, select
                 fixed md:static top-0 left-0 h-screen w-64 z-50 bg-background
                 transform transition-transform duration-300
                 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-                ${desktopOpen ? "md:translate-x-0" : "md:-translate-x-full md:fixed"}
+                ${desktopOpen ? "md:translate-x-0" : "md:-translate-x-full md:fixed md:w-0 md:overflow-hidden"}
                 border-r border-foreground/10 py-6 flex flex-col
             `}
             >
@@ -531,20 +533,34 @@ export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, select
                         </button>
                     </div>
 
-                    {/* Bin button */}
-                    <button
-                        onClick={() => setShowBin(true)}
-                        className="flex items-center gap-2 px-4 py-1.5 text-sm text-foreground/40 hover:text-foreground transition-colors"
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14H6L5 6" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
-                            <path d="M9 6V4h6v2" />
-                        </svg>
-                        Bin
-                    </button>
+                    {/* Bottom row: logout + bin */}
+                    <div className="flex items-center justify-between px-4 py-1.5">
+                        <button
+                            onClick={async () => { setSigningOut(true); await authClient.signOut(); window.location.href = "/login"; }}
+                            disabled={signingOut}
+                            className="flex items-center gap-2 text-sm text-foreground/40 hover:text-foreground transition-colors disabled:opacity-60"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                            {signingOut ? "Logging out..." : "Log out"}
+                        </button>
+                        <button
+                            onClick={() => setShowBin(true)}
+                            className="flex items-center gap-2 text-sm text-foreground/40 hover:text-foreground transition-colors"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6l-1 14H6L5 6" />
+                                <path d="M10 11v6" />
+                                <path d="M14 11v6" />
+                                <path d="M9 6V4h6v2" />
+                            </svg>
+                            Bin
+                        </button>
+                    </div>
                 </div>
             </aside>
 
