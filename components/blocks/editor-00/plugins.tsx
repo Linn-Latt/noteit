@@ -2,16 +2,11 @@ import { useState } from "react"
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary"
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin"
 import { ListPlugin } from "@lexical/react/LexicalListPlugin"
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin"
 import { ContentEditable } from "@/components/editor/editor-ui/content-editable"
 import { ToolbarPlugin } from "@/components/editor/plugins/toolbar/toolbar-plugin"
 import { HistoryToolbarPlugin } from "@/components/editor/plugins/toolbar/history-toolbar-plugin"
 import { BlockFormatButtons } from "@/components/editor/plugins/toolbar/block-format-buttons-plugin"
-// import { BlockFormatDropDown } from "@/components/editor/plugins/toolbar/block-format-toolbar-plugin"
-// import { FormatParagraph } from "@/components/editor/plugins/toolbar/block-format/format-paragraph"
-// import { FormatHeading } from "@/components/editor/plugins/toolbar/block-format/format-heading"
-// import { FormatBulletedList } from "@/components/editor/plugins/toolbar/block-format/format-bulleted-list"
-// import { FormatNumberedList } from "@/components/editor/plugins/toolbar/block-format/format-numbered-list"
-// import { FormatQuote } from "@/components/editor/plugins/toolbar/block-format/format-quote"
 import { FontFormatToolbarPlugin } from "@/components/editor/plugins/toolbar/font-format-toolbar-plugin"
 import { FontSizeToolbarPlugin } from "@/components/editor/plugins/toolbar/font-size-toolbar-plugin"
 import { FontColorToolbarPlugin } from "@/components/editor/plugins/toolbar/font-color-toolbar-plugin"
@@ -33,16 +28,6 @@ export function Plugins() {
           <div className="flex flex-wrap items-center gap-1 border-b p-1 relative z-50">
             <HistoryToolbarPlugin />
             <BlockFormatButtons />
-
-            {/* <BlockFormatDropDown>
-              <FormatParagraph />
-              <FormatHeading levels={["h1", "h2", "h3"]} />
-              <FormatBulletedList />
-              <FormatNumberedList />
-              <FormatQuote />
-              <FormatParagraph />
-            </BlockFormatDropDown> */}
-
             <FontSizeToolbarPlugin />
             <FontFormatToolbarPlugin />
             <FontColorToolbarPlugin />
@@ -65,6 +50,7 @@ export function Plugins() {
           ErrorBoundary={LexicalErrorBoundary}
         />
         <ListPlugin />
+        <HistoryPlugin />
       </div>
     </div>
   )
