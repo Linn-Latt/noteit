@@ -25,7 +25,7 @@ export function Plugins() {
     <div className="relative z-0">
       <ToolbarPlugin>
         {() => (
-          <div className="flex flex-wrap items-center gap-1 border-b p-1 relative z-50">
+          <div className="flex flex-wrap items-center gap-1 border-b p-1 sticky top-0 z-50 bg-background">
             <HistoryToolbarPlugin />
             <BlockFormatButtons />
             <FontSizeToolbarPlugin />
