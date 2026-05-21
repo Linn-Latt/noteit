@@ -24,10 +24,19 @@ export const auth = betterAuth({
                         throw new APIError("BAD_REQUEST", { message: "Disposable email addresses are not allowed" });
                     }
 
+                    const apiKey = process.env.ZEROBOUNCE_API_KEY;
+                    if (!apiKey) {
+                        throw new APIError("INTERNAL_SERVER_ERROR", { message: "Email validation is not configured" });
+                    }
+
                     const zbRes = await fetch(
                         `https://api.zerobounce.net/v2/validate?api_key=${process.env.ZEROBOUNCE_API_KEY}&email=${encodeURIComponent(email)}&ip_address=`
                     );
                     const zbData = await zbRes.json();
+
+                    if (zbData.error) {
+                        throw new APIError("INTERNAL_SERVER_ERROR", { message: "Email validation failed, please try again" });
+                    }
 
                     if (
                         zbData.status === "invalid" ||
