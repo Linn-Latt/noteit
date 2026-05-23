@@ -13,6 +13,7 @@ import {
   Select,
   SelectContent,
   SelectGroup,
+  SelectItem,
   SelectTrigger,
 } from "@/components/ui/select"
 
@@ -51,11 +52,7 @@ function formatBlockType(editor: LexicalEditor, value: string) {
   }
 }
 
-export function BlockFormatDropDown({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function useBlockFormatToolbar() {
   const { activeEditor, blockType, setBlockType } = useToolbarContext()
 
   function $updateToolbar(selection: BaseSelection) {
@@ -73,24 +70,15 @@ export function BlockFormatDropDown({
         element = anchorNode.getTopLevelElementOrThrow()
       }
 
-      const elementKey = element.getKey()
-      const elementDOM = activeEditor.getElementByKey(elementKey)
+      const elementDOM = activeEditor.getElementByKey(element.getKey())
 
       if (elementDOM !== null) {
-        // setSelectedElementKey(elementKey);
         if ($isListNode(element)) {
-          const parentList = $getNearestNodeOfType<ListNode>(
-            anchorNode,
-            ListNode
-          )
-          const type = parentList
-            ? parentList.getListType()
-            : element.getListType()
+          const parentList = $getNearestNodeOfType<ListNode>(anchorNode, ListNode)
+          const type = parentList ? parentList.getListType() : element.getListType()
           setBlockType(type)
         } else {
-          const type = $isHeadingNode(element)
-            ? element.getTag()
-            : element.getType()
+          const type = $isHeadingNode(element) ? element.getTag() : element.getType()
           if (type in blockTypeToBlockName) {
             setBlockType(type as keyof typeof blockTypeToBlockName)
           }
@@ -101,6 +89,17 @@ export function BlockFormatDropDown({
 
   useUpdateToolbarHandler($updateToolbar)
 
+  return { activeEditor, blockType, setBlockType }
+}
+
+// Original dropdown (used on desktop via BlockFormatDropDown)
+export function BlockFormatDropDown({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const { activeEditor, blockType, setBlockType } = useBlockFormatToolbar()
+
   return (
     <Select
       value={blockType}
@@ -110,11 +109,45 @@ export function BlockFormatDropDown({
       }}
     >
       <SelectTrigger className="!h-8 w-min gap-1">
-        {blockTypeToBlockName[blockType].icon}
-        <span>{blockTypeToBlockName[blockType].label}</span>
+        {blockTypeToBlockName[blockType]?.icon}
+        <span>{blockTypeToBlockName[blockType]?.label}</span>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>{children}</SelectGroup>
+      </SelectContent>
+    </Select>
+  )
+}
+
+// Mobile select — shows all block types in a compact dropdown
+export function BlockFormatSelect() {
+  const { activeEditor, blockType, setBlockType } = useBlockFormatToolbar()
+
+  return (
+    <Select
+      value={blockType}
+      defaultValue="paragraph"
+      onValueChange={(value) => {
+        setBlockType(value as keyof typeof blockTypeToBlockName)
+        formatBlockType(activeEditor, value)
+      }}
+    >
+      <SelectTrigger className="!h-8 w-9 gap-0 [&>svg:last-child]:hidden">
+        <span className="flex items-center justify-center">
+          {blockTypeToBlockName[blockType]?.icon ?? blockTypeToBlockName["paragraph"].icon}
+        </span>
+      </SelectTrigger>
+      <SelectContent position="popper" align="start">
+        <SelectGroup>
+          {Object.entries(blockTypeToBlockName).map(([value, { label, icon }]) => (
+            <SelectItem key={value} value={value} className="text-xs">
+              <span className="flex items-center gap-2">
+                {icon}
+                {label}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   )

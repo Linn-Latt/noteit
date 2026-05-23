@@ -26,38 +26,42 @@ import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-up
 import { getSelectedNode } from "@/components/editor/utils/get-selected-node"
 import { Separator } from "@/components/ui/separator"
 import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+} from "@/components/ui/select"
 
-const ELEMENT_FORMAT_OPTIONS: {
-  [key in Exclude<ElementFormatType, "start" | "end" | "">]: {
-    icon: React.ReactNode
-    iconRTL: string
-    name: string
-  }
-} = {
-  left: {
-    icon: <AlignLeftIcon className="size-4" />,
-    iconRTL: "left-align",
-    name: "Left Align",
-  },
-  center: {
-    icon: <AlignCenterIcon className="size-4" />,
-    iconRTL: "center-align",
-    name: "Center Align",
-  },
-  right: {
-    icon: <AlignRightIcon className="size-4" />,
-    iconRTL: "right-align",
-    name: "Right Align",
-  },
-  justify: {
-    icon: <AlignJustifyIcon className="size-4" />,
-    iconRTL: "justify-align",
-    name: "Justify Align",
-  },
-} as const
+type AlignFormat = Exclude<ElementFormatType, "start" | "end" | "">
+
+const ALIGN_OPTIONS: {
+  value: AlignFormat
+  icon: React.ReactNode
+  name: string
+}[] = [
+  { value: "left",    icon: <AlignLeftIcon    className="size-4" />, name: "Left Align"    },
+  { value: "center",  icon: <AlignCenterIcon  className="size-4" />, name: "Center Align"  },
+  { value: "right",   icon: <AlignRightIcon   className="size-4" />, name: "Right Align"   },
+  { value: "justify", icon: <AlignJustifyIcon className="size-4" />, name: "Justify Align" },
+]
+
+const INDENT_OPTIONS: {
+  value: "outdent" | "indent"
+  icon: React.ReactNode
+  name: string
+}[] = [
+  { value: "outdent", icon: <IndentDecreaseIcon className="size-4" />, name: "Outdent" },
+  { value: "indent",  icon: <IndentIncreaseIcon className="size-4" />, name: "Indent"  },
+]
+
+function getAlignIcon(format: ElementFormatType): React.ReactNode {
+  return (
+    ALIGN_OPTIONS.find((o) => o.value === format)?.icon ?? (
+      <AlignLeftIcon className="size-4" />
+    )
+  )
+}
 
 export function ElementFormatToolbarPlugin({
   separator = true,
@@ -74,7 +78,6 @@ export function ElementFormatToolbarPlugin({
 
       let matchingParent
       if ($isLinkNode(parent)) {
-        // If node is a link, we need to fetch the parent paragraph node to set format
         matchingParent = $findMatchingParent(
           node,
           (parentNode) => $isElementNode(parentNode) && !parentNode.isInline()
@@ -93,69 +96,45 @@ export function ElementFormatToolbarPlugin({
   useUpdateToolbarHandler($updateToolbar)
 
   const handleValueChange = (value: string) => {
-    if (!value) return // Prevent unselecting current value
-
-    setElementFormat(value as ElementFormatType)
+    if (!value) return
 
     if (value === "indent") {
       activeEditor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined)
     } else if (value === "outdent") {
       activeEditor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined)
     } else {
-      activeEditor.dispatchCommand(
-        FORMAT_ELEMENT_COMMAND,
-        value as ElementFormatType
-      )
+      setElementFormat(value as ElementFormatType)
+      activeEditor.dispatchCommand(FORMAT_ELEMENT_COMMAND, value as ElementFormatType)
     }
   }
 
   return (
     <>
-      <ToggleGroup
-        type="single"
-        value={elementFormat}
-        defaultValue={elementFormat}
-        onValueChange={handleValueChange}
-      >
-        {/* Alignment toggles */}
-        {Object.entries(ELEMENT_FORMAT_OPTIONS).map(([value, option]) => (
-          <ToggleGroupItem
-            key={value}
-            value={value}
-            variant={"outline"}
-            size="sm"
-            aria-label={option.name}
-          >
-            {option.icon}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+      <Select value={elementFormat} defaultValue="left" onValueChange={handleValueChange}>
+        <SelectTrigger className="!h-8 w-9 gap-0 [&>svg:last-child]:hidden">
+          <span className="flex items-center justify-center">
+            {getAlignIcon(elementFormat)}
+          </span>
+        </SelectTrigger>
+        <SelectContent position="popper" align="start">
+          {ALIGN_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value} className="text-xs">
+              <span className="flex items-center gap-2">
+                {option.icon}
+              </span>
+            </SelectItem>
+          ))}
+          <SelectSeparator />
+          {INDENT_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value} className="text-xs">
+              <span className="flex items-center gap-2">
+                {option.icon}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {separator && <Separator orientation="vertical" className="!h-7" />}
-      {/* Indentation toggles */}
-      <ToggleGroup
-        type="single"
-        value={elementFormat}
-        defaultValue={elementFormat}
-        onValueChange={handleValueChange}
-      >
-        <ToggleGroupItem
-          value="outdent"
-          aria-label="Outdent"
-          variant={"outline"}
-          size="sm"
-        >
-          <IndentDecreaseIcon className="size-4" />
-        </ToggleGroupItem>
-
-        <ToggleGroupItem
-          value="indent"
-          variant={"outline"}
-          aria-label="Indent"
-          size="sm"
-        >
-          <IndentIncreaseIcon className="size-4" />
-        </ToggleGroupItem>
-      </ToggleGroup>
     </>
   )
 }

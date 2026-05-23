@@ -64,7 +64,7 @@ export function LineHeightToolbarPlugin() {
 
     return (
         <Select value={lineHeight} onValueChange={applyLineHeight}>
-            <SelectTrigger className="!h-8 w-20 gap-1 text-xs">
+            <SelectTrigger className="!h-8 w-15 gap-1 text-xs">
                 <SelectValue />
             </SelectTrigger>
             <SelectContent>

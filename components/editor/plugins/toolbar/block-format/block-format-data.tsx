@@ -3,11 +3,11 @@ import {
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
+  ListChevronsUpDown,
   ListIcon,
   ListOrderedIcon,
   ListTodoIcon,
   QuoteIcon,
-  TextIcon,
 } from "lucide-react"
 
 export const blockTypeToBlockName: Record<
@@ -16,7 +16,7 @@ export const blockTypeToBlockName: Record<
 > = {
   paragraph: {
     label: "Paragraph",
-    icon: <TextIcon className="size-4" />,
+    icon: <ListChevronsUpDown className="size-4" />,
   },
   h1: {
     label: "Heading 1",
