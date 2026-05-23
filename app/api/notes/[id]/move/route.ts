@@ -18,12 +18,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         if (!notebook) return NextResponse.json({ error: "Notebook not found" }, { status: 404 });
     }
 
-    const note = await prisma.note.updateMany({
-        where: { id, userId: session.user.id, isDeleted: false },
-        data: { notebookId: notebookId ?? null },
-    });
+    try {
+        const note = await prisma.note.updateMany({
+            where: { id, userId: session.user.id, isDeleted: false },
+            data: { notebookId: notebookId ?? null },
+        });
 
-    if (note.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        if (note.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true });
+    } catch (err) {
+        console.error("PATCH /api/notes/[id]/move error:", err);
+        return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
 }

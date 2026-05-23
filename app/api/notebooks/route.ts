@@ -6,21 +6,26 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return NextResponse.json({ error: "Unauthorized"}, { status: 401 });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const notebooks = await prisma.notebook.findMany({
-        where: { userId: session.user.id, isDeleted: false },
-        orderBy: { createdAt: "asc" },
-        include: {
-            notes: {
-                where: { isDeleted: false },
-                select: { id: true, title: true },
-                orderBy: { createdAt: "asc" },
+    try {
+        const notebooks = await prisma.notebook.findMany({
+            where: { userId: session.user.id, isDeleted: false },
+            orderBy: { createdAt: "asc" },
+            include: {
+                notes: {
+                    where: { isDeleted: false },
+                    select: { id: true, title: true },
+                    orderBy: { createdAt: "asc" },
+                },
             },
-        },
-    });
+        });
 
-    return NextResponse.json(notebooks);
+        return NextResponse.json(notebooks);
+    } catch (err) {
+        console.error("GET /api/notebooks error:", err);
+        return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
 }
 
 export async function POST(req: Request) {
@@ -30,9 +35,14 @@ export async function POST(req: Request) {
     const { name } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
-    const notebook = await prisma.notebook.create({
-        data: { name: name.trim(), userId: session.user.id },
-    });
+    try {
+        const notebook = await prisma.notebook.create({
+            data: { name: name.trim(), userId: session.user.id },
+        });
 
-    return NextResponse.json(notebook, { status: 201 });
+        return NextResponse.json(notebook, { status: 201 });
+    } catch (err) {
+        console.error("POST /api/notebooks error:", err);
+        return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
 }

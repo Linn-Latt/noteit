@@ -9,14 +9,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     const { id } = await params;
 
-    const note = await prisma.note.findFirst({
-        where: { id, userId: session.user.id, isDeleted: false },
-        select: { id: true, title: true, content: true },
-    });
+    try {
+        const note = await prisma.note.findFirst({
+            where: { id, userId: session.user.id, isDeleted: false },
+            select: { id: true, title: true, content: true },
+        });
 
-    if (!note) return NextResponse.json({ error: "Not Found" }, { status: 404 });
+        if (!note) return NextResponse.json({ error: "Not Found" }, { status: 404 });
 
-    return NextResponse.json(note);
+        return NextResponse.json(note);
+    } catch (err) {
+        console.error("GET /api/notes/[id] error:", err);
+        return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -30,14 +35,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (content !== undefined) data.content = content;
     if (title !== undefined) data.title = title.trim();
 
-    const note = await prisma.note.updateMany({
-        where: { id, userId: session.user.id, isDeleted: false },
-        data,
-    });
+    try {
+        const note = await prisma.note.updateMany({
+            where: { id, userId: session.user.id, isDeleted: false },
+            data,
+        });
 
-    if (note.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        if (note.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true });
+    } catch (err) {
+        console.error("PATCH /api/notes/[id] error:", err);
+        return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -46,12 +56,17 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
 
-    const note = await prisma.note.updateMany({
-        where: { id, userId: session.user.id, isDeleted: false },
-        data: { isDeleted: true, deletedAt: new Date() },
-    });
+    try {
+        const note = await prisma.note.updateMany({
+            where: { id, userId: session.user.id, isDeleted: false },
+            data: { isDeleted: true, deletedAt: new Date() },
+        });
 
-    if (note.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        if (note.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true });
+    } catch (err) {
+        console.error("DELETE /api/notes/[id] error:", err);
+        return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
 }
