@@ -1,9 +1,9 @@
 import { streamText } from "ai";
 import { groq } from "@ai-sdk/groq";
-import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+
+export const runtime = "edge";
 
 export async function POST(req: Request) {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -12,8 +12,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { mode, content, url } = body as {
         mode: "note" | "url";
-        content?: string;   
-        url?: string;      
+        content?: string;
+        url?: string;
     };
 
     let textToSummarize = "";
@@ -41,41 +41,32 @@ export async function POST(req: Request) {
             return new Response("Invalid URL protocol", { status: 400 });
         }
 
-        // Fetch the article server-side
-        let html: string;
+        // Use Jina Reader to extract article text
         try {
-            const response = await fetch(parsedUrl.toString(), {
-                headers: {
-                    "User-Agent": "Mozilla/5.0 (compatible; NoteIt/1.0)",
-                },
-                signal: AbortSignal.timeout(10_000),
+            const jinaRes = await fetch(`https://r.jina.ai/${parsedUrl.toString()}`, {
+                headers: { "Accept": "text/plain" },
+                signal: AbortSignal.timeout(15_000),
             });
 
-            if (!response.ok) {
+            if (!jinaRes.ok) {
                 return new Response("Failed to fetch article", { status: 422 });
             }
 
-            html = await response.text();
+            const text = await jinaRes.text();
+            if (!text?.trim()) {
+                return new Response("Could not extract article content", { status: 422 });
+            }
+
+            textToSummarize = text.trim().slice(0, 15_000);
         } catch {
             return new Response("Could not reach the URL", { status: 422 });
         }
-
-        // Extract readable text using Readability 
-        const dom = new JSDOM(html, { url: parsedUrl.toString() });
-        const reader = new Readability(dom.window.document);
-        const article = reader.parse();
-
-        if (!article?.textContent?.trim()) {
-            return new Response("Could not extract article content", { status: 422 });
-        }
-
-        textToSummarize = article.textContent.trim().slice(0, 15_000);
     } else {
         return new Response("Invalid mode", { status: 400 });
     }
 
     const result = streamText({
-        model: groq("llama-3.1-8b-instant"), 
+        model: groq("llama-3.1-8b-instant"),
         system: "You are a concise summarizer. Produce clear, well-structured summaries in markdown format with bullet points for key takeaways.",
         prompt: `Summarize the following:\n\n${textToSummarize}`,
         maxOutputTokens: 512,
