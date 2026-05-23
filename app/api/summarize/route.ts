@@ -3,8 +3,6 @@ import { groq } from "@ai-sdk/groq";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
-export const runtime = "edge";
-
 export async function POST(req: Request) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return new Response("Unauthorized", { status: 401 });
