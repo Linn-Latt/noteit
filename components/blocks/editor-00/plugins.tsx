@@ -3,6 +3,7 @@ import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import { ContentEditable } from "@/components/editor/editor-ui/content-editable";
 import { ToolbarPlugin } from "@/components/editor/plugins/toolbar/toolbar-plugin";
 import { HistoryToolbarPlugin } from "@/components/editor/plugins/toolbar/history-toolbar-plugin";
@@ -15,6 +16,7 @@ import { ClearFormattingToolbarPlugin } from "@/components/editor/plugins/toolba
 import { ElementFormatToolbarPlugin } from "@/components/editor/plugins/toolbar/element-format-toolbar-plugin";
 import { LineHeightToolbarPlugin } from "@/components/editor/plugins/toolbar/line-height-toolbar-plugin";
 import { SummarizeToolbarPlugin } from "@/components/editor/plugins/toolbar/summarize-toolbar-plugin";
+import { InsertTableToolbarPlugin } from "@/components/editor/plugins/toolbar/insert-table-toolbar-plugin";
 
 export function Plugins() {
   const [, setFloatingAnchorElem] = useState<HTMLDivElement | null>(null)
@@ -42,6 +44,7 @@ export function Plugins() {
             <ClearFormattingToolbarPlugin />
             <ElementFormatToolbarPlugin />
             <LineHeightToolbarPlugin />
+            <InsertTableToolbarPlugin />
             <SummarizeToolbarPlugin />
           </div>
         )}
@@ -59,6 +62,7 @@ export function Plugins() {
           ErrorBoundary={LexicalErrorBoundary}
         />
         <ListPlugin />
+        <TablePlugin />
         <HistoryPlugin />
       </div>
     </div>
