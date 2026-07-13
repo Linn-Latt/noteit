@@ -29,21 +29,18 @@ export const auth = betterAuth({
                         throw new APIError("INTERNAL_SERVER_ERROR", { message: "Email validation is not configured" });
                     }
 
-                    const zbRes = await fetch(
-                        `https://api.zerobounce.net/v2/validate?api_key=${process.env.ZEROBOUNCE_API_KEY}&email=${encodeURIComponent(email)}&ip_address=`
-                    );
-                    const zbData = await zbRes.json();
+                    try {
+                        const zbRes = await fetch(
+                            `https://api.zerobounce.net/v2/validate?api_key=${process.env.ZEROBOUNCE_API_KEY}&email=${encodeURIComponent(email)}&ip_address=`
+                        );
+                        const zbData = await zbRes.json();
 
-                    if (zbData.error) {
-                        throw new APIError("INTERNAL_SERVER_ERROR", { message: "Email validation failed, please try again" });
-                    }
-
-                    if (
-                        zbData.status === "invalid" ||
-                        zbData.status === "spamtrap" ||
-                        zbData.status === "do_not_mail"
-                    ) {
-                        throw new APIError("BAD_REQUEST", { message: "Email address is invalid or doesn't exist." });
+                        if (!zbData.error && (zbData.status === "invalid" || zbData.status === "spamtrap" || zbData.status === "do_not_mail")) {
+                            throw new APIError("BAD_REQUEST", { message: "Email address is invalid or doesn't exist." });
+                        } 
+                    } catch (err) {
+                        if (err instanceof APIError) throw err;
+                        console.warn("ZeroBounce check skipped:", err);
                     }
                 }
             }
