@@ -337,7 +337,7 @@ export default function Sidebar({ userName, onNoteSelect, onNoteDeselect, select
                 transform transition-transform duration-300
                 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
                 ${desktopOpen ? "md:translate-x-0" : "md:-translate-x-full md:fixed md:w-0 md:overflow-hidden"}
-                border-r border-foreground/10 py-6 flex flex-col
+                border-r border-foreground/20 py-6 flex flex-col
             `}
             >
                 {/* User name */}

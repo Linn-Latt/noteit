@@ -75,7 +75,7 @@ export default function Bin({ onClose, onRestored }: {
     const isEmpty = notes.length === 0 && notebooks.length === 0;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
             <div className="bg-background rounded-xl p-6 w-96 flex flex-col gap-4 shadow-lg max-h-[80vh]">
                 {/* Header */}
                 <div className="flex items-center justify-between">
