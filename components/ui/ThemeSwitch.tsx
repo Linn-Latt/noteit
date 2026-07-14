@@ -33,26 +33,26 @@ const icons = {
 };
 
 export default function ThemeSwitch() {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem("theme") as Theme) ?? "system";
+  });
 
   useEffect(() => {
-    const stored = (localStorage.getItem("theme") as Theme) ?? "system";
-    setTheme(stored);
-  }, []);
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else if (theme === "light") {
+      root.classList.remove("dark");
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.classList.toggle("dark", prefersDark);
+    }
+  }, [theme]);
 
   function apply(t: Theme) {
     setTheme(t);
     localStorage.setItem("theme", t);
-    const root = document.documentElement;
-    if (t === "dark") {
-      root.classList.add("dark");
-    } else if (t === "light") {
-      root.classList.remove("dark");
-    } else {
-      // system
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", prefersDark);
-    }
   }
 
   const options: Theme[] = ["light", "dark", "system"];
