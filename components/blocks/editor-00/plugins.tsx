@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";

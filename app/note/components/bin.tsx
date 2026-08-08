@@ -69,7 +69,7 @@ export default function Bin({ onClose, onRestored }: {
     }
 
     function formatDate(iso: string) {
-        return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
     }
 
     const isEmpty = notes.length === 0 && notebooks.length === 0;

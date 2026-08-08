@@ -33,10 +33,14 @@ const icons = {
 };
 
 export default function ThemeSwitch() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
-    return (localStorage.getItem("theme") as Theme) ?? "system";
-  });
+  const [theme, setTheme] = useState<Theme>("system"); // start with "system"
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme") as Theme | null;
+    if (stored === "light" || stored === "dark" || stored === "system") {
+      setTheme(stored);
+    }
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;

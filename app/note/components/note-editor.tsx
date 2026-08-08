@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SerializedEditorState } from "lexical";
 import { Editor } from "@/components/blocks/editor-00/editor";
 
 export default function NoteEditor({ noteId }: { noteId: string | null }) {
     const [editorState, setEditorState] = useState<SerializedEditorState | undefined>(undefined);
     const [loading, setLoading] = useState(false);
+    const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (!noteId) return;
@@ -35,8 +36,8 @@ export default function NoteEditor({ noteId }: { noteId: string | null }) {
     }, [noteId]);
 
     function handleChange(state: SerializedEditorState) {
-        clearTimeout((window as any).__saveTimer);
-        (window as any).__saveTimer = setTimeout(async () => {
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(async () => {
             if (!noteId) return;
 
             try {

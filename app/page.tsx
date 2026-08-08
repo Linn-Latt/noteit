@@ -38,7 +38,7 @@ export default async function Home() {
 
         {/* Headline */}
         <h1 className="max-w-2xl text-5xl font-bold leading-tight tracking-tight">
-          A quiet place for{" "} <br></br>
+          A quiet place for{" "} <br />
           <span className="text-foreground/30">loud ideas.</span>
         </h1>
 
