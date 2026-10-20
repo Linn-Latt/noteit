@@ -7,6 +7,12 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, { provider: "postgresql" }),
     emailAndPassword: { enabled: true },
     baseURL: process.env.BETTER_AUTH_URL,
+    session: {
+        cookieCache: {
+            enabled: true,
+            maxAge: 5 * 60, // 5 minutes 
+        },
+    },
     hooks: {
         before: createAuthMiddleware(async (ctx) => {
             if (ctx.path === "/sign-up/email") {
