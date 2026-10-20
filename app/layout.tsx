@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-// @ts-ignore
+// @ts-expect-error Next.js handles CSS side-effect imports during bundling.
 import "./globals.css";
 import ThemeSwitch from "../components/ui/ThemeSwitch";
 
@@ -34,7 +34,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
         <ThemeSwitch />
         {children}
       </body>
