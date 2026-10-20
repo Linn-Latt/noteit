@@ -65,17 +65,22 @@ model Notebook {
   id        String   @id @default(uuid())
   name      String
   userId    String
+  parentId  String?  
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   isDeleted Boolean  @default(false)
   deletedAt DateTime?
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes     Note[]
 
-  @@unique([userId, name])
+  parent    Notebook? @relation("NotebookChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Notebook[] @relation("NotebookChildren")
+
+  @@unique([userId, name, parentId])
+  @@index([userId, parentId, isDeleted])
+  @@index([userId, isDeleted])
 }
 
 model Note {
