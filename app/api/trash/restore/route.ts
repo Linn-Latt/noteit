@@ -13,9 +13,34 @@ export async function POST(req: Request) {
     const userId = session.user.id;
 
     if (type === "notebook") {
+        // Check if the notebook's parent is also deleted
+        const notebookToRestore = await prisma.notebook.findFirst({
+            where: { id, userId, isDeleted: true },
+            select: { parentId: true },
+        });
+
+        if (!notebookToRestore) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+        // If it has a parent, check whether that parent is still deleted
+        let detachFromParent = false;
+        if (notebookToRestore.parentId) {
+            const parent = await prisma.notebook.findFirst({
+                where: { id: notebookToRestore.parentId, userId },
+                select: { isDeleted: true },
+            });
+            // Parent is deleted or missing — restore as root so it's visible
+            if (!parent || parent.isDeleted) {
+                detachFromParent = true;
+            }
+        }
+
         const notebook = await prisma.notebook.updateMany({
             where: { id, userId, isDeleted: true },
-            data: { isDeleted: false, deletedAt: null },
+            data: {
+                isDeleted: false,
+                deletedAt: null,
+                ...(detachFromParent ? { parentId: null } : {}),
+            },
         });
 
         if (notebook.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
