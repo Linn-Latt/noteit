@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-// @ts-expect-error Next.js handles CSS side-effect imports during bundling.
 import "./globals.css";
 import ThemeSwitch from "../components/ui/ThemeSwitch";
 
